@@ -1,0 +1,472 @@
+{
+    "mode": "BC",
+    "bus": "AB",
+	"slave_sends": true,
+    "divider": 1,
+	"ptc_addr": [1],
+    "arrays": {
+      "M1": {
+		"address": 31,
+        "direction": "send",
+        "subaddr_A": 17,
+        "subaddr_B": 17,
+        "size": 32,
+        "data": {
+          "pb": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 3,
+            "wordh": 2,
+            "var": "out_PB",
+            "cmr": 180.0,
+            "scale": "RAD_TO_DEG"
+          },
+		  "tb": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 5,
+            "wordh": 4,
+            "var": "out_TB",
+            "cmr": 180.0,
+            "scale": "RAD_TO_DEG"
+          },
+		  "kb": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 7,
+            "wordh": 6,
+            "var": "tr_out_KB",
+            "cmr": 180.0,
+			"scale": "RAD_TO_DEG"
+          },
+		  
+		  "ptb": {
+            "type": "word",
+            "signed": true,
+            "word": 8,
+            "var": "out_PTB",
+            "cmr": 16.0
+          },
+		  "ttb": {
+            "type": "word",
+            "signed": true,
+            "word": 9,
+            "var": "out_TTB",
+            "cmr": 16.0
+          },
+		  "ktb": {
+            "type": "word",
+            "signed": true,
+            "word": 10,
+            "var": "out_KTB",
+            "cmr": 16.0
+          },
+		  "vnp": {
+            "type": "word",
+            "signed": true,
+            "word": 11,
+            "var": "out_VNP",
+            "cmr": 16.0
+          },
+		  "vnb": {
+            "type": "word",
+            "signed": true,
+            "word": 12,
+            "var": "out_VNB",
+            "cmr": 16.0
+          },
+		  "snb": {
+            "type": "word",
+            "signed": true,
+            "word": 13,
+            "var": "out_SNB",
+            "cmr": 32.0
+          },
+		  "vep": {
+            "type": "word",
+            "signed": true,
+            "word": 14,
+            "var": "out_VNP",
+            "cmr": 16.0
+          },
+		  "veb": {
+            "type": "word",
+            "signed": true,
+            "word": 15,
+            "var": "out_VNB",
+            "cmr": 16.0
+          },
+		  "seb": {
+            "type": "word",
+            "signed": true,
+            "word": 16,
+            "var": "out_SNB",
+            "cmr": 32.0
+          },
+		  "vzb": {
+            "type": "word",
+            "signed": true,
+            "word": 17,
+            "var": "out_VZB",
+            "cmr": 8.0
+          },
+		   "szb": {
+            "type": "word",
+            "signed": true,
+            "word": 18,
+            "var": "out_SZB",
+            "cmr": 16.0
+          },
+		  "ro": {
+            "type": "word",
+            "signed": true,
+            "word": 19,
+            "var": "out_ROB",
+            "cmr": 180.0,
+			"scale": "RAD_TO_DEG"
+          },
+		  
+		  "fi": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 21,
+            "wordh": 20,
+            "var": "out_FIM",
+            "cmr": 180.0,
+            "scale": "RAD_TO_DEG"
+          },
+		  
+		  "la": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 23,
+            "wordh": 22,
+            "var": "out_LAM",
+            "cmr": 180.0,
+            "scale": "RAD_TO_DEG"
+          },
+		  "crsm": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 25,
+            "wordh": 24,
+            "var": "out_CRSM",
+            "cmr": 180.0,
+            "scale": "RAD_TO_DEG"
+          },
+		  "vlm": {
+            "type": "word",
+            "word": 26,
+            "var": "out_VLM",
+            "cmr": 16.0
+          },
+		  "A": {
+            "type": "word",
+            "word": 27,
+            "var": "out_A_M",
+            "cmr": 16000.0
+          },
+		  "B": {
+            "type": "word",
+            "word": 28,
+            "var": "out_B_M",
+            "cmr": 16000.0
+          },
+		  "T": {
+            "type": "word",
+            "word": 29,
+            "var": "out_T_M",
+            "cmr": 180.0,
+			"scale": "RAD_TO_DEG"
+          },
+		  "tdk": {
+            "type": "const",
+            "word": 31,
+            "value": "0"
+          },
+		  "tdk": {
+            "type": "word",
+            "word": 31,
+            "var": "out_M_K",
+            "cmr": 18.0
+          },
+          "csum": {
+            "type": "checksum",
+            "word": 32
+          },
+
+		  "reserved": {
+            "type": "const",
+            "word": 1,
+            "value": "0"
+          },
+		  
+		  "level_valid": {
+            "type": "bits",
+            "word": 1,
+            "var": "level_valid",
+            "length": 1,
+            "offset": 4,
+			"values": "1=0/0=1"
+          },
+		  "k_valid": {
+            "type": "bits",
+            "word": 1,
+            "var": "k_valid",
+            "length": 1,
+            "offset": 5,
+			"values": "1=0/0=1"
+          },
+		  "crs_valid": {
+            "type": "bits",
+            "word": 1,
+            "var": "crs_valid",
+            "length": 1,
+            "offset": 6,
+			"values": "1=0/0=1"
+          },
+		  "coord_valid": {
+            "type": "bits",
+            "word": 1,
+            "var": "coord_valid",
+            "length": 1,
+            "offset": 7,
+			"values": "1=0/0=1"
+          },
+		  "vo_valid": {
+            "type": "bits",
+            "word": 1,
+            "var": "vo_valid",
+            "length": 1,
+            "offset": 8,
+			"values": "1=0/0=1"
+          },
+		  "va_valid": {
+			"type": "bits",
+			"word": 1,
+			"var": "va_valid",
+			"length": 1,
+			"offset": 9,
+			"values": "1=0/0=1"
+		  },
+		"rot_valid": {
+            "type": "bits",
+            "word": 1,
+            "var": "rot_valid",
+            "length": 1,
+            "offset": 11,
+			"values": "1=0/0=1"
+          },
+		"stab_valid": {
+            "type": "bits",
+            "word": 1,
+            "var": "stab_valid",
+            "length": 1,
+            "offset": 12,
+			"values": "1=0/0=1"
+          },
+		  "dk_valid": {
+            "type": "bits",
+            "word": 1,
+            "var": "dk_valid",
+            "length": 1,
+            "offset": 13,
+			"values": "1=0/0=1"
+          },
+		  "test": {
+            "type": "bits",
+            "word": 1,
+            "var": "prts",
+            "length": 3,
+            "offset": 14,
+			"values": "0=0/2=6"
+          },
+		  
+		  "cur_bus": {
+            "type": "bits",
+            "word": 1,
+            "var": "cur_bus",
+            "length": 1,
+            "offset": 19
+          }
+        }
+      },
+	  "M2": {
+		"address": 31,
+        "direction": "send",
+        "subaddr_A": 18,
+        "subaddr_B": 18,
+        "size": 12,
+        "data": {
+		
+		  "in": {
+            "type": "word",
+            "word": 2,
+            "var": "out_IN",
+            "cmr": 16.0
+          },
+		  "ie": {
+            "type": "word",
+            "word": 3,
+            "var": "out_IE",
+            "cmr": 16.0
+          },
+		  "can_obs": {
+            "type": "bits",
+            "word": 1,
+            "var": "prgk",
+            "length": 1,
+            "offset": 5
+          },
+		  "is_obs": {
+            "type": "bits",
+            "word": 1,
+            "var": "pff",
+            "length": 1,
+            "offset": 6
+          },
+		  "integr_valid": {
+            "type": "bits",
+            "word": 1,
+            "var": "integr_valid",
+            "length": 1,
+            "offset": 4,
+			"values": "1=0/0=1"
+          },
+		  "cur_bus": {
+            "type": "bits",
+            "word": 1,
+            "var": "cur_bus",
+            "length": 1,
+            "offset": 19,
+			"values": "1=0/0=1"
+          },
+		  
+          "csum": {
+            "type": "checksum",
+            "word": 12
+          }
+        }
+      },
+      "Mcorr": {
+		"address": 1,
+        "direction": "receive",
+        "subaddr_A": 16,
+        "subaddr_B": 16,
+        "size": 25,
+        "data": {
+		  "cnt":{
+			  "type": "counter",
+			  "word": 1
+		  },
+		  "fi": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 4,
+            "wordh": 3,
+            "var": "sns_fi",
+            "cmr": 180.0,
+			"scale": "RAD_TO_DEG"
+          },
+		  
+		  "la": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 6,
+            "wordh": 5,
+            "var": "sns_la",
+            "cmr": 180.0,
+			"scale": "RAD_TO_DEG"
+          },
+		  "Kc": {
+            "type": "word",
+            "word": 7,
+            "var": "m_a",
+            "cmr": 1.5
+          },
+		  
+		  "sns_vn": {
+            "type": "word",
+            "word": 8,
+            "var": "sns_vn",
+            "cmr": 16.0            
+          },
+		   "sns_ve": {
+            "type": "word",
+            "word": 9,
+            "var": "sns_ve",
+            "cmr": 16.0
+          },
+		  "vlm": {
+            "type": "word",
+            "word": 10,
+            "var": "lag_along",
+            "cmr": 16.0
+          },
+		   "day": {
+            "type": "word",
+            "word": 12,
+            "var": "sns_date_d",
+			"cmr": 0.0
+          },
+		  "mon": {
+            "type": "word",
+            "word": 13,
+            "var": "sns_date_m",
+			"cmr": 0.0
+          },
+		  "year": {
+            "type": "word",
+            "word": 14,
+            "var": "sns_date_y",
+			"cmr": 0.0
+          },
+		  "time": {
+            "type": "dword",
+            "wordl": 16,
+            "wordh": 15,
+            "var": "sns_time",
+			"cmr": 0.0,
+			"scale": 0.001
+          },
+		 
+		  "Kc": {
+            "type": "word",
+            "word": 21,
+            "var": "kc_a",
+            "cmr": 1.0
+          },
+		  "csum": {
+            "type": "checksum",
+            "word": 25
+          },
+		  		  
+		  "sns_valid": {
+            "type": "bits",
+            "word": 2,
+            "var": "sns_valid",
+            "length": 2,
+            "offset": 6,
+            "values": "0=3/1=0"
+          },
+		  "lag_valid": {
+            "type": "bits",
+            "word": 2,
+            "var": "lag_valid",
+            "length": 2,
+            "offset": 8,
+			"values": "1=0/0=3"
+          },
+		  "baza": {
+            "type": "bits",
+            "word": 2,
+            "var": "pas",
+            "length": 1,
+			"values": "0=1/1=0",
+            "offset": 4
+          }
+		
+        }
+      }	
+    }
+  }

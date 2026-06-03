@@ -1,0 +1,33 @@
+{
+"PORT_VOG": {
+  "BAUD": 115200,
+  "in_IIB": 1
+},
+"PORT_DIS": {
+  "BAUD": 115200,
+  "in_PO5_new": 1,
+  "out_PO5_new": 1
+},
+"PORT_GPSV": {
+  "BAUD": 4800,
+  "in_SNS": 1
+},
+"PORT_LAG": {
+  "BAUD": 4800,
+  "in_lag": 1
+},
+"PORT_RS50": {
+  "BAUD": 115200,
+  "in_INTR": 1,
+  "out_INTR": 1
+},
+"PORT_POT": {
+  "BAUD": 115200,
+  "OUT": {
+	"MESSAGE2": {
+		"FREQ": 1,
+		"MESSAGE": "&$GPRMC,sns_time,&A,sns_fi(out_FIM),sns_fi_sign(out_FIM),sns_la(out_LAM),sns_la_sign(out_LAM),out_VP[*MS_KN],out_KB[3.1*RAD_TO_DEG],&200825,&0,&E,&A"
+	}
+  }
+}  
+}

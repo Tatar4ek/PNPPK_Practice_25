@@ -1,0 +1,254 @@
+{
+    "mode": "BC",
+    "bus": "AB",
+    "slave_sends": false,
+    "divider": 1,
+    "arrays": {
+      "M1": {
+        "address": 31,
+        "direction": "send",
+        "subaddr_A": 20,
+        "subaddr_B": 20,
+        "size": 31,
+        "data": {
+          "pb": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 3,
+            "wordh": 2,
+            "var": "out_PB",
+            "cmr": 180.0,
+            "scale": "RAD_TO_DEG"
+          },
+          "tb": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 5,
+            "wordh": 4,
+            "var": "out_TB",
+            "cmr": 180.0,
+            "scale": "RAD_TO_DEG"
+          },
+          "kb": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 7,
+            "wordh": 6,
+            "var": "tr_out_KB",
+            "cmr": 180.0,
+			      "scale": "RAD_TO_DEG"
+          },
+          
+          "ptb": {
+            "type": "word",
+            "signed": true,
+            "word": 8,
+            "var": "out_PTB",
+            "cmr": 16.0
+          },
+          "ttb": {
+            "type": "word",
+            "signed": true,
+            "word": 9,
+            "var": "out_TTB",
+            "cmr": 16.0
+          },
+          "ktb": {
+            "type": "word",
+            "signed": true,
+            "word": 10,
+            "var": "out_KTB",
+            "cmr": 16.0
+          },
+          "vnp": {
+            "type": "word",
+            "signed": true,
+            "word": 11,
+            "var": "out_VNP",
+            "cmr": 16.0
+          },
+          "vnb": {
+            "type": "word",
+            "signed": true,
+            "word": 12,
+            "var": "out_VNB",
+            "cmr": 16.0
+          },
+          "snb": {
+            "type": "word",
+            "signed": true,
+            "word": 13,
+            "var": "out_SNB",
+            "cmr": 32.0
+          },
+          "vep": {
+            "type": "word",
+            "signed": true,
+            "word": 14,
+            "var": "out_VNP",
+            "cmr": 16.0
+          },
+          "veb": {
+            "type": "word",
+            "signed": true,
+            "word": 15,
+            "var": "out_VNB",
+            "cmr": 16.0
+          },
+          "seb": {
+            "type": "word",
+            "signed": true,
+            "word": 16,
+            "var": "out_SNB",
+            "cmr": 32.0
+          },
+          "vzb": {
+            "type": "word",
+            "signed": true,
+            "word": 17,
+            "var": "out_VZB",
+            "cmr": 8.0
+          },
+           "szb": {
+            "type": "word",
+            "signed": true,
+            "word": 18,
+            "var": "out_SZB",
+            "cmr": 16.0
+          },
+          "ro": {
+            "type": "word",
+            "signed": true,
+            "word": 19,
+            "var": "out_ROB",
+            "cmr": 180.0,
+            "scale": "RAD_TO_DEG"
+          },
+          
+          "fi": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 21,
+            "wordh": 20,
+            "var": "out_FIM",
+            "cmr": 180.0,
+            "scale": "RAD_TO_DEG"
+          },
+          
+          "la": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 23,
+            "wordh": 22,
+            "var": "out_LAM",
+            "cmr": 180.0,
+            "scale": "RAD_TO_DEG"
+          },
+          "crsm": {
+            "type": "dword",
+            "signed": true,
+            "wordl": 25,
+            "wordh": 24,
+            "var": "out_CRSM",
+            "cmr": 180.0,
+            "scale": "RAD_TO_DEG"
+          },
+          "vlm": {
+            "type": "word",
+            "word": 26,
+            "var": "out_VLM",
+            "cmr": 16.0
+          },
+          "tdk": {
+            "type": "word",
+            "word": 27,
+            "var": "out_M_K",
+            "cmr": 18.0
+          },
+          "A": {
+            "type": "word",
+            "word": 28,
+            "var": "out_A_M",
+            "cmr": 16000.0
+          },
+          "B": {
+            "type": "word",
+            "word": 29,
+            "var": "out_B_M",
+            "cmr": 16000.0
+          },
+          "T": {
+            "type": "word",
+            "word": 30,
+            "var": "out_T_M",
+            "cmr": 45.0,
+			"scale": "RAD_TO_DEG"
+          },
+          "csum": {
+            "type": "checksum",
+            "word": 31
+          },
+          "reserved": {
+            "type": "const",
+            "word": 1,
+            "value": "0"
+          },
+          "global_fail": {
+            "type": "bits",
+            "word": 1,
+            "var": "pfault",
+            "length": 2,
+            "offset": 4,
+            "values": "0=0/1=3"
+          },
+         "pff": {
+            "type": "bits",
+            "word": 1,
+            "var": "pff",
+            "length": 2,
+            "offset": 6,
+            "values": "1=1/0=3"
+         },
+         
+          "k_prec": {
+            "type": "bits",
+            "word": 1,
+            "var": "k_prec",
+            "length": 2,
+            "offset": 8
+          },
+        "sns_mode": {
+            "type": "bits",
+            "word": 1,
+            "var": "sns_mode",
+            "length": 2,
+            "offset": 10,
+            "values": "0=3/1=2/2=1/3=0"
+          },
+          
+          "pga": {
+            "type": "bits",
+            "word": 1,
+            "var": "pga",
+            "length": 1,
+            "offset": 12,
+            "values": "1=0/0=1"
+          },
+          "tmrk": {
+            "type": "bits",
+            "word": 1,
+            "var": "tmrk",
+            "length": 1,
+            "offset": 15
+          },
+          "pkvz": {
+            "type": "bits",
+            "word": 1,
+            "var": "pkvz",
+            "length": 1,
+            "offset": 16
+          }
+        }
+      }
+  }
+}
