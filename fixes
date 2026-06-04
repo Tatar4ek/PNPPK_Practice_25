@@ -1,0 +1,190 @@
+void MilEditorWidget::showFieldDialog(bool isEdit, int row) {
+    if (m_currentArrayIndex < 0) { 
+        QMessageBox::warning(this, QString::fromUtf8("Внимание"), QString::fromUtf8("Сначала выберите массив.")); 
+        return; 
+    }
+
+    QDialog dialog(this);
+    dialog.setWindowTitle(isEdit ? QString::fromUtf8("Изменить поле данных") : QString::fromUtf8("Добавить поле данных"));
+    dialog.setMinimumWidth(450);
+
+    QVBoxLayout *mainL = new QVBoxLayout(&dialog);
+    QFormLayout *formL = new QFormLayout();
+
+    QLineEdit *nameEdit = new QLineEdit(&dialog);
+    formL->addRow(QString::fromUtf8("Имя параметра:"), nameEdit);
+
+    QComboBox *typeCombo = new QComboBox(&dialog);
+    typeCombo->addItems(QStringList() << "word" << "dword" << "bits" << "const" << "counter" << "checksum");
+    formL->addRow(QString::fromUtf8("Тип (type):"), typeCombo);
+
+    QStackedWidget *stack = new QStackedWidget(&dialog);
+
+    // --- Страница 0: word ---
+    QWidget *wWord = new QWidget(&dialog); 
+    QFormLayout *fWord = new QFormLayout(wWord);
+    QSpinBox *spinWord = new QSpinBox(wWord); spinWord->setRange(1, 32);
+    QLineEdit *editVarW = new QLineEdit(wWord);
+    QCheckBox *chkSignedW = new QCheckBox(QString::fromUtf8("Знаковое (signed)"), wWord);
+    QDoubleSpinBox *spinCmrW = new QDoubleSpinBox(wWord); spinCmrW->setRange(-99999, 99999); spinCmrW->setDecimals(4);
+    QLineEdit *editScaleW = new QLineEdit(wWord);
+    fWord->addRow(QString::fromUtf8("Номер слова (word):"), spinWord);
+    fWord->addRow(QString::fromUtf8("Переменная (var):"), editVarW);
+    fWord->addRow(chkSignedW);
+    fWord->addRow(QString::fromUtf8("Цена предстаршего разряда (cmr):"), spinCmrW);
+    fWord->addRow(QString::fromUtf8("Масштаб (scale, необяз.):"), editScaleW);
+    stack->addWidget(wWord);
+
+    // --- Страница 1: dword ---
+    QWidget *wDword = new QWidget(&dialog); 
+    QFormLayout *fDword = new QFormLayout(wDword);
+    QSpinBox *spinWordL = new QSpinBox(wDword); spinWordL->setRange(1, 32);
+    QSpinBox *spinWordH = new QSpinBox(wDword); spinWordH->setRange(1, 32);
+    QLineEdit *editVarD = new QLineEdit(wDword);
+    QCheckBox *chkSignedD = new QCheckBox(QString::fromUtf8("Знаковое (signed)"), wDword);
+    QDoubleSpinBox *spinCmrD = new QDoubleSpinBox(wDword); spinCmrD->setRange(-99999, 99999); spinCmrD->setDecimals(4);
+    QLineEdit *editScaleD = new QLineEdit(wDword);
+    fDword->addRow(QString::fromUtf8("Младшее слово (wordl):"), spinWordL);
+    fDword->addRow(QString::fromUtf8("Старшее слово (wordh):"), spinWordH);
+    fDword->addRow(QString::fromUtf8("Переменная (var):"), editVarD);
+    fDword->addRow(chkSignedD);    fDword->addRow(QString::fromUtf8("Цена предстаршего разряда (cmr):"), spinCmrD);
+    fDword->addRow(QString::fromUtf8("Масштаб (scale, необяз.):"), editScaleD);
+    stack->addWidget(wDword);
+
+    // --- Страница 2: bits ---
+    QWidget *wBits = new QWidget(&dialog); 
+    QFormLayout *fBits = new QFormLayout(wBits);
+    QSpinBox *spinWordB = new QSpinBox(wBits); spinWordB->setRange(1, 32);
+    QLineEdit *editVarB = new QLineEdit(wBits);
+    QSpinBox *spinLength = new QSpinBox(wBits); spinLength->setRange(1, 16);
+    QSpinBox *spinOffset = new QSpinBox(wBits); spinOffset->setRange(4, 19);
+    QLineEdit *editValues = new QLineEdit(wBits);
+    fBits->addRow(QString::fromUtf8("Номер слова (word):"), spinWordB);
+    fBits->addRow(QString::fromUtf8("Переменная (var):"), editVarB);
+    fBits->addRow(QString::fromUtf8("Длина в битах (length):"), spinLength);
+    fBits->addRow(QString::fromUtf8("Смещение (offset, 4..19):"), spinOffset);
+    fBits->addRow(QString::fromUtf8("Таблица значений (values, необяз.):"), editValues);
+    stack->addWidget(wBits);
+
+    // --- Страница 3: const ---
+    QWidget *wConst = new QWidget(&dialog); 
+    QFormLayout *fConst = new QFormLayout(wConst);
+    QSpinBox *spinWordC = new QSpinBox(wConst); spinWordC->setRange(1, 32);
+    QLineEdit *editValueC = new QLineEdit(wConst);
+    fConst->addRow(QString::fromUtf8("Номер слова (word):"), spinWordC);
+    fConst->addRow(QString::fromUtf8("Значение (value, напр. 0 или 0xFF):"), editValueC);
+    stack->addWidget(wConst);
+
+    // --- Страница 4: counter ---
+    QWidget *wCounter = new QWidget(&dialog); 
+    QFormLayout *fCounter = new QFormLayout(wCounter);
+    QSpinBox *spinWordCnt = new QSpinBox(wCounter); spinWordCnt->setRange(1, 32);
+    fCounter->addRow(QString::fromUtf8("Номер слова (word):"), spinWordCnt);
+    stack->addWidget(wCounter);
+
+    // --- Страница 5: checksum ---
+    QWidget *wChecksum = new QWidget(&dialog); 
+    QFormLayout *fChecksum = new QFormLayout(wChecksum);
+    QSpinBox *spinWordCsum = new QSpinBox(wChecksum); spinWordCsum->setRange(1, 32);
+    fChecksum->addRow(QString::fromUtf8("Номер слова (word):"), spinWordCsum);
+    stack->addWidget(wChecksum);
+
+    mainL->addLayout(formL);
+    mainL->addWidget(stack);
+
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    connect(btnBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(btnBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    mainL->addWidget(btnBox);
+    // === Заполнение данных при редактировании ===
+    if (isEdit && row >= 0) {
+        const MilDataField &f = m_config.arrays[m_currentArrayIndex].dataFields.at(row);
+        nameEdit->setText(f.name);
+        typeCombo->setCurrentText(f.type);
+        
+        if (f.type == "word") {
+            spinWord->setValue(f.word);
+            editVarW->setText(f.var);
+            chkSignedW->setChecked(f.isSigned);
+            spinCmrW->setValue(f.cmr);
+            editScaleW->setText(f.scale);
+        } else if (f.type == "dword") {
+            spinWordL->setValue(f.wordl);
+            spinWordH->setValue(f.wordh);
+            editVarD->setText(f.var);
+            chkSignedD->setChecked(f.isSigned);
+            spinCmrD->setValue(f.cmr);
+            editScaleD->setText(f.scale);
+        } else if (f.type == "bits") {
+            spinWordB->setValue(f.word);
+            editVarB->setText(f.var);
+            spinLength->setValue(f.length);
+            spinOffset->setValue(f.offset);
+            editValues->setText(f.values);
+        } else if (f.type == "const") {
+            spinWordC->setValue(f.word);
+            editValueC->setText(f.value);
+        } else if (f.type == "counter") {
+            spinWordCnt->setValue(f.word);
+        } else if (f.type == "checksum") {
+            spinWordCsum->setValue(f.word);
+        }
+    }
+
+    // === Динамическое переключение видимости страниц ===
+    auto updateVisibility = [&]() {
+        stack->setCurrentIndex(typeCombo->currentIndex());
+    };
+    connect(typeCombo, &QComboBox::currentTextChanged, updateVisibility);
+    updateVisibility(); // Вызываем сразу, чтобы показать нужную страницу
+
+    // === Обработка нажатия ОК ===
+    if (dialog.exec() == QDialog::Accepted) {
+        MilDataField newField;
+        newField.name = nameEdit->text().trimmed();
+        newField.type = typeCombo->currentText();
+
+        if (newField.name.isEmpty()) {
+            QMessageBox::warning(this, QString::fromUtf8("Ошибка"), QString::fromUtf8("Имя параметра не может быть пустым."));            return;
+        }
+
+        int typeIdx = typeCombo->currentIndex();
+        if (typeIdx == 0) { // word
+            newField.word = spinWord->value();
+            newField.var = editVarW->text().trimmed();
+            newField.isSigned = chkSignedW->isChecked();
+            newField.cmr = spinCmrW->value();
+            newField.scale = editScaleW->text().trimmed();
+        } else if (typeIdx == 1) { // dword
+            newField.wordl = spinWordL->value();
+            newField.wordh = spinWordH->value();
+            newField.var = editVarD->text().trimmed();
+            newField.isSigned = chkSignedD->isChecked();
+            newField.cmr = spinCmrD->value();
+            newField.scale = editScaleD->text().trimmed();
+        } else if (typeIdx == 2) { // bits
+            newField.word = spinWordB->value();
+            newField.var = editVarB->text().trimmed();
+            newField.length = spinLength->value();
+            newField.offset = spinOffset->value();
+            newField.values = editValues->text().trimmed();
+        } else if (typeIdx == 3) { // const
+            newField.word = spinWordC->value();
+            newField.value = editValueC->text().trimmed();
+        } else if (typeIdx == 4) { // counter
+            newField.word = spinWordCnt->value();
+        } else if (typeIdx == 5) { // checksum
+            newField.word = spinWordCsum->value();
+        }
+
+        // Сохраняем в структуру
+        if (isEdit && row >= 0) {
+            m_config.arrays[m_currentArrayIndex].dataFields[row] = newField;
+        } else {
+            m_config.arrays[m_currentArrayIndex].dataFields.append(newField);
+        }
+        
+        // Обновляем таблицу
+        updateArrayEditor();
+    }
+}
