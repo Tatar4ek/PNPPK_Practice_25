@@ -1,68 +1,104 @@
-#include "mil_editor.h"
-#include "config_utils.h"
-#include <QDebug> // <--- УБЕДИТЕСЬ, ЧТО ЭТОТ ИНКЛУД ЕСТЬ
+public:
+    explicit MilEditorWidget(QWidget *parent = nullptr);
+    
+    void loadFromJson(const QJsonObject &root);
+    // Убираем старый saveToJson, добавляем новый, который возвращает готовую строку
+    QString generateOrderedJson() const; 
+    void clear();
 
-// ... (другой код)
-
-void MilEditorWidget::saveToJson(QJsonObject &root) const {
+QString MilEditorWidget::generateOrderedJson() const {
+    // 1. Принудительно сохраняем текущие данные из UI в структуру
     const_cast<MilEditorWidget*>(this)->saveCurrentArrayFromUi();
+
+    QString json = "{\n";
     
-    // 1. ПРИНУДИТЕЛЬНО очищаем объект, чтобы начать с чистого листа
-    root = QJsonObject();
+    // 2. ЖЕСТКИЙ порядок глобальных параметров (всегда будут вверху)
+    json += "  \"mode\": \"" + m_config.mode + "\",\n";
+    json += "  \"bus\": \"" + m_config.bus + "\",\n";
+    json += "  \"slave_sends\": " + QString(m_config.slave_sends ? "true" : "false") + ",\n";
+    json += "  \"address\": " + QString::number(m_config.address) + ",\n";
     
-    // 2. ЖЕСТКИЙ порядок вставки (они будут вверху файла)
-    root["mode"] = m_config.mode;
-    root["bus"] = m_config.bus;
-    root["slave_sends"] = m_config.slave_sends;
-    root["address"] = m_config.address;
-    
-    QJsonArray ptcArr;
+    // 3. ptc_addr
+    json += "  \"ptc_addr\": [";
+    QStringList ptcStrList;
     for (int p : m_config.ptc_addr) {
-        ptcArr.append(p);
+        ptcStrList.append(QString::number(p));
     }
-    root["ptc_addr"] = ptcArr;
-    
-    // 3. Массивы добавляем ПОСЛЕДНИМИ (они будут внизу файла)
-    QJsonObject arrsObj;
-    for (const MilArray &arr : m_config.arrays) {
-        QJsonObject aObj;
-        aObj["address"] = arr.address;
-        aObj["direction"] = arr.direction;
-        aObj["subaddr_A"] = arr.subaddr_A;
-        aObj["subaddr_B"] = arr.subaddr_B;
-        aObj["size"] = arr.size;
+    json += ptcStrList.join(", ") + "],\n";
+
+    // 4. Массивы (всегда будут внизу)
+    json += "  \"arrays\": {\n";
+    for (int i = 0; i < m_config.arrays.size(); ++i) {
+        const MilArray &arr = m_config.arrays.at(i);
+        json += "    \"" + arr.name + "\": {\n";
+        json += "      \"address\": " + QString::number(arr.address) + ",\n";
+        json += "      \"direction\": \"" + arr.direction + "\",\n";
+        json += "      \"subaddr_A\": " + QString::number(arr.subaddr_A) + ",\n";
+        json += "      \"subaddr_B\": " + QString::number(arr.subaddr_B) + ",\n";
+        json += "      \"size\": " + QString::number(arr.size) + ",\n";
+        json += "      \"data\": {\n";
         
-        QJsonObject dObj;
-        for (const MilDataField &f : arr.dataFields) {
-            QJsonObject fObj;
-            fObj["type"] = f.type;
-            if (f.type == "word" || f.type == "bits" || f.type == "const" || f.type == "counter" || f.type == "checksum") fObj["word"] = f.word;
-            if (f.type == "word" || f.type == "dword" || f.type == "bits") fObj["var"] = f.var;
-            if (f.type == "word" || f.type == "dword") { 
-                fObj["signed"] = f.isSigned; 
-                fObj["cmr"] = f.cmr; 
-                if (!f.scale.isEmpty()) fObj["scale"] = f.scale; 
+        for (int j = 0; j < arr.dataFields.size(); ++j) {
+            const MilDataField &f = arr.dataFields.at(j);
+            json += "        \"" + f.name + "\": {\n";
+            json += "          \"type\": \"" + f.type + "\"";
+            
+            if (f.type == "word" || f.type == "bits" || f.type == "const" || f.type == "counter" || f.type == "checksum") 
+                json += ",\n          \"word\": " + QString::number(f.word);
+            if (f.type == "word" || f.type == "dword" || f.type == "bits") 
+                json += ",\n          \"var\": \"" + f.var + "\"";
+            if (f.type == "word" || f.type == "dword") {
+                json += ",\n          \"signed\": " + QString(f.isSigned ? "true" : "false");
+                json += ",\n          \"cmr\": " + QString::number(f.cmr);
+                if (!f.scale.isEmpty()) json += ",\n          \"scale\": \"" + f.scale + "\"";
             }
-            if (f.type == "dword") { 
-                fObj["wordl"] = f.wordl; 
-                fObj["wordh"] = f.wordh; 
+            if (f.type == "dword") {
+                json += ",\n          \"wordl\": " + QString::number(f.wordl);
+                json += ",\n          \"wordh\": " + QString::number(f.wordh);
             }
-            if (f.type == "bits") { 
-                fObj["length"] = f.length; 
-                fObj["offset"] = f.offset; 
-                if (!f.values.isEmpty()) fObj["values"] = f.values; 
+            if (f.type == "bits") {
+                json += ",\n          \"length\": " + QString::number(f.length);
+                json += ",\n          \"offset\": " + QString::number(f.offset);
+                if (!f.values.isEmpty()) json += ",\n          \"values\": \"" + f.values + "\"";
             }
             if (f.type == "const") {
-                fObj["value"] = f.value;
+                json += ",\n          \"value\": \"" + f.value + "\"";
             }
-            dObj[f.name] = fObj;
+            
+            json += "\n        }" + (j < arr.dataFields.size() - 1 ? "," : "") + "\n";
         }
-        aObj["data"] = dObj;
-        arrsObj[arr.name] = aObj;
+        json += "      }\n    }" + (i < m_config.arrays.size() - 1 ? "," : "") + "\n";
     }
-    root["arrays"] = arrsObj;
+    json += "  }\n}";
+    
+    return json;
+}
 
-    // === ДЕТЕКТОР ЛЖИ ===
-    // Эта строка напечатает реальный порядок ключей прямо перед записью в файл
-    qDebug() << "=== РЕАЛЬНЫЙ ПОРЯДОК КЛЮЧЕЙ В QJsonObject ===" << root.keys();
+
+
+bool MainWindow::saveJson(const QString &filePath) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) return false;
+    
+    QTextStream out(&file);
+    out.setCodec("UTF-8"); // Гарантируем корректную кодировку
+
+    if (m_currentProtocol == Protocol::NMEA) {
+        // Для NMEA можно оставить QJsonObject, так как там порядок портов не так критичен, 
+        // но если захотите, можно применить тот же строковый метод.
+        QJsonObject root;
+        m_nmeaEditor->saveToJson(root); // (Этот метод нужно оставить в nmea_editor, если он там есть)
+        out << QJsonDocument(root).toJson(QJsonDocument::Indented);
+    } 
+    else if (m_currentProtocol == Protocol::MIL1553) {
+        // Для MilStd1553 используем наш 100% надежный строковый генератор
+        out << m_milEditor->generateOrderedJson();
+    } 
+    else {
+        file.close();
+        return false;
+    }
+
+    file.close();
+    return true;
 }
