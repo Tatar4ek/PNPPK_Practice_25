@@ -88,8 +88,6 @@ void MainWindow::setupUi() {
 
     m_stackedWidget = new QStackedWidget(this);
     mainLayout->addWidget(m_stackedWidget);
-
-    // Страница 0: Приветствие
     QWidget *welcomePage = new QWidget(this);
     QVBoxLayout *welcomeLayout = new QVBoxLayout(welcomePage);
     welcomeLayout->addStretch();
@@ -101,11 +99,9 @@ void MainWindow::setupUi() {
     welcomeLayout->addStretch();
     m_stackedWidget->addWidget(welcomePage);
 
-    // Страница 1: NMEA
     m_nmeaEditor = new NmeaEditorWidget(this);
     m_stackedWidget->addWidget(m_nmeaEditor);
 
-    // Страница 2: MilStd1553
     m_milEditor = new MilEditorWidget(this);
     m_stackedWidget->addWidget(m_milEditor);
 
@@ -174,18 +170,25 @@ bool MainWindow::loadJson(const QString &filePath) {
 }
 
 bool MainWindow::saveJson(const QString &filePath) {
-    QJsonObject root;
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) return false;
+
+    QTextStream out(&file);
+    out.setCodec("UTF-8");
+
     if (m_currentProtocol == Protocol::NMEA) {
+        QJsonObject root;
         m_nmeaEditor->saveToJson(root);
-    } else if (m_currentProtocol == Protocol::MIL1553) {
-        m_milEditor->saveToJson(root);
-    } else {
+        out << QJsonDocument(root).toJson(QJsonDocument::Indented);
+    }
+    else if (m_currentProtocol == Protocol::MIL1553) {
+        out << m_milEditor->generateOrderedJson();
+    }
+    else {
+        file.close();
         return false;
     }
 
-    QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) return false;
-    file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
     file.close();
     return true;
 }

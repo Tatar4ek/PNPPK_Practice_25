@@ -182,40 +182,76 @@ void MilEditorWidget::loadFromJson(const QJsonObject &root) {
     updateArrayList();
 }
 
-void MilEditorWidget::saveToJson(QJsonObject &root) const {
+QString MilEditorWidget::generateOrderedJson() const {
     const_cast<MilEditorWidget*>(this)->saveCurrentArrayFromUi();
-    root["mode"] = m_config.mode;
-    root["bus"] = m_config.bus;
-    root["slave_sends"] = m_config.slave_sends;
-    root["address"] = m_config.address;
-    QJsonArray ptcArr;
-    for (int p : m_config.ptc_addr) ptcArr.append(p);
-    root["ptc_addr"] = ptcArr;
 
-    QJsonObject arrsObj;
-    for (const MilArray &arr : m_config.arrays) {
-        QJsonObject aObj;
-        aObj["address"] = arr.address;
-        aObj["direction"] = arr.direction;
-        aObj["subaddr_A"] = arr.subaddr_A;
-        aObj["subaddr_B"] = arr.subaddr_B;
-        aObj["size"] = arr.size;
-        QJsonObject dObj;
-        for (const MilDataField &f : arr.dataFields) {
-            QJsonObject fObj;
-            fObj["type"] = f.type;
-            if (f.type == "word" || f.type == "bits" || f.type == "const" || f.type == "counter" || f.type == "checksum") fObj["word"] = f.word;
-            if (f.type == "word" || f.type == "dword" || f.type == "bits") fObj["var"] = f.var;
-            if (f.type == "word" || f.type == "dword") { fObj["signed"] = f.isSigned; fObj["cmr"] = f.cmr; if (!f.scale.isEmpty()) fObj["scale"] = f.scale; }
-            if (f.type == "dword") { fObj["wordl"] = f.wordl; fObj["wordh"] = f.wordh; }
-            if (f.type == "bits") { fObj["length"] = f.length; fObj["offset"] = f.offset; if (!f.values.isEmpty()) fObj["values"] = f.values; }
-            if (f.type == "const") fObj["value"] = f.value;
-            dObj[f.name] = fObj;
-        }
-        aObj["data"] = dObj;
-        arrsObj[arr.name] = aObj;
+    QString json = "{\n";
+
+    json += QString("  \"mode\": \"") + m_config.mode + "\",\n";
+    json += QString("  \"bus\": \"") + m_config.bus + "\",\n";
+    json += QString("  \"slave_sends\": ") + (m_config.slave_sends ? "true" : "false") + ",\n";
+    json += QString("  \"address\": ") + QString::number(m_config.address) + ",\n";
+
+    if (!m_config.ptc_addr.isEmpty()) {
+        json += QString("  \"ptc_addr\": [");
+        QStringList ptcStrList;
+        for (int p : m_config.ptc_addr) ptcStrList.append(QString::number(p));
+        json += ptcStrList.join(", ") + "],\n";
     }
-    root["arrays"] = arrsObj;
+
+    json += QString("  \"arrays\": {\n");
+    for (int i = 0; i < m_config.arrays.size(); ++i) {
+        const MilArray &arr = m_config.arrays.at(i);
+        json += QString("    \"") + arr.name + "\": {\n";
+
+        json += QString("      \"address\": ") + QString::number(arr.address) + ",\n";
+        json += QString("      \"direction\": \"") + arr.direction + "\",\n";
+        json += QString("      \"subaddr_A\": ") + QString::number(arr.subaddr_A) + ",\n";
+        json += QString("      \"subaddr_B\": ") + QString::number(arr.subaddr_B) + ",\n";
+        json += QString("      \"size\": ") + QString::number(arr.size) + ",\n";
+        json += QString("      \"data\": {\n");
+
+        for (int j = 0; j < arr.dataFields.size(); ++j) {
+            const MilDataField &f = arr.dataFields.at(j);
+            json += QString("        \"") + f.name + "\": {\n";
+
+            json += QString("          \"type\": \"") + f.type + "\"";
+
+            if (f.type == "word" || f.type == "bits" || f.type == "const" || f.type == "counter" || f.type == "checksum")
+                json += QString(",\n          \"word\": ") + QString::number(f.word);
+
+            if (f.type == "dword") {
+                json += QString(",\n          \"wordl\": ") + QString::number(f.wordl);
+                json += QString(",\n          \"wordh\": ") + QString::number(f.wordh);
+            }
+
+            if (f.type == "word" || f.type == "dword" || f.type == "bits")
+                json += QString(",\n          \"var\": \"") + f.var + "\"";
+
+            if (f.type == "word" || f.type == "dword") {
+                json += QString(",\n          \"signed\": ") + (f.isSigned ? "true" : "false");
+                json += QString(",\n          \"cmr\": ") + QString::number(f.cmr);
+                if (!f.scale.isEmpty())
+                    json += QString(",\n          \"scale\": \"") + f.scale + "\"";
+            }
+
+            if (f.type == "bits") {
+                json += QString(",\n          \"length\": ") + QString::number(f.length);
+                json += QString(",\n          \"offset\": ") + QString::number(f.offset);
+                if (!f.values.isEmpty())
+                    json += QString(",\n          \"values\": \"") + f.values + "\"";
+            }
+
+            if (f.type == "const")
+                json += QString(",\n          \"value\": \"") + f.value + "\"";
+
+            json += QString("\n        }") + (j < arr.dataFields.size() - 1 ? "," : "") + "\n";
+        }
+        json += QString("      }\n    }") + (i < m_config.arrays.size() - 1 ? "," : "") + "\n";
+    }
+    json += QString("  }\n}");
+
+    return json;
 }
 
 void MilEditorWidget::clear() {
@@ -278,48 +314,183 @@ void MilEditorWidget::saveCurrentArrayFromUi() {
     a.size = m_arrSizeSpin->value();
 }
 
-// Диалог полей (сокращен для краткости, логика та же, что и раньше, но инкапсулирована)
 void MilEditorWidget::showFieldDialog(bool isEdit, int row) {
-    if (m_currentArrayIndex < 0) { QMessageBox::warning(this, QString::fromUtf8("Внимание"), QString::fromUtf8("Выберите массив.")); return; }
+    if (m_currentArrayIndex < 0) {
+        QMessageBox::warning(this, QString::fromUtf8("Внимание"), QString::fromUtf8("Сначала выберите массив."));
+        return;
+    }
+
     QDialog dialog(this);
-    dialog.setWindowTitle(isEdit ? QString::fromUtf8("Изменить поле") : QString::fromUtf8("Добавить поле"));
-    dialog.setMinimumWidth(400);
+    dialog.setWindowTitle(isEdit ? QString::fromUtf8("Изменить поле данных") : QString::fromUtf8("Добавить поле данных"));
+    dialog.setMinimumWidth(450);
+
     QVBoxLayout *mainL = new QVBoxLayout(&dialog);
     QFormLayout *formL = new QFormLayout();
+
     QLineEdit *nameEdit = new QLineEdit(&dialog);
-    formL->addRow(QString::fromUtf8("Имя:"), nameEdit);
+    formL->addRow(QString::fromUtf8("Имя параметра:"), nameEdit);
+
     QComboBox *typeCombo = new QComboBox(&dialog);
     typeCombo->addItems(QStringList() << "word" << "dword" << "bits" << "const" << "counter" << "checksum");
     formL->addRow(QString::fromUtf8("Тип (type):"), typeCombo);
 
     QStackedWidget *stack = new QStackedWidget(&dialog);
-    // Здесь создаются виджеты для каждого типа (word, dword, bits, const, counter, checksum)
-    // Аналогично предыдущему коду, но внутри этого класса.
-    // Для экономии места в ответе я оставлю структуру, но тебе нужно скопировать создание QWidget для каждого типа из предыдущего ответа в это место.
-    // ВАЖНО: В реальном файле вставь сюда блоки создания wWord, wDword, wBits, wConst, wCnt, wCsum из предыдущего кода.
 
-    // Заглушка для примера компиляции (в реальном коде замени на полные формы из прошлого ответа):
-    QWidget *dummy = new QWidget(&dialog); formL->addRow("Параметры:", dummy); stack->addWidget(dummy);
+    QWidget *wWord = new QWidget(&dialog);
+    QFormLayout *fWord = new QFormLayout(wWord);
+    QSpinBox *spinWord = new QSpinBox(wWord); spinWord->setRange(1, 32);
+    QLineEdit *editVarW = new QLineEdit(wWord);
+    QCheckBox *chkSignedW = new QCheckBox(QString::fromUtf8("Знаковое (signed)"), wWord);
+    QDoubleSpinBox *spinCmrW = new QDoubleSpinBox(wWord); spinCmrW->setRange(-99999, 99999); spinCmrW->setDecimals(4);
+    QLineEdit *editScaleW = new QLineEdit(wWord);
+    fWord->addRow(QString::fromUtf8("Номер слова (word):"), spinWord);
+    fWord->addRow(QString::fromUtf8("Переменная (var):"), editVarW);
+    fWord->addRow(chkSignedW);
+    fWord->addRow(QString::fromUtf8("Цена предстаршего разряда (cmr):"), spinCmrW);
+    fWord->addRow(QString::fromUtf8("Масштаб (scale, необяз.):"), editScaleW);
+    stack->addWidget(wWord);
 
-    mainL->addLayout(formL); mainL->addWidget(stack);
+    QWidget *wDword = new QWidget(&dialog);
+    QFormLayout *fDword = new QFormLayout(wDword);
+    QSpinBox *spinWordL = new QSpinBox(wDword); spinWordL->setRange(1, 32);
+    QSpinBox *spinWordH = new QSpinBox(wDword); spinWordH->setRange(1, 32);
+    QLineEdit *editVarD = new QLineEdit(wDword);
+    QCheckBox *chkSignedD = new QCheckBox(QString::fromUtf8("Знаковое (signed)"), wDword);
+    QDoubleSpinBox *spinCmrD = new QDoubleSpinBox(wDword); spinCmrD->setRange(-99999, 99999); spinCmrD->setDecimals(4);
+    QLineEdit *editScaleD = new QLineEdit(wDword);
+    fDword->addRow(QString::fromUtf8("Младшее слово (wordl):"), spinWordL);
+    fDword->addRow(QString::fromUtf8("Старшее слово (wordh):"), spinWordH);
+    fDword->addRow(QString::fromUtf8("Переменная (var):"), editVarD);
+    fDword->addRow(chkSignedD);    fDword->addRow(QString::fromUtf8("Цена предстаршего разряда (cmr):"), spinCmrD);
+    fDword->addRow(QString::fromUtf8("Масштаб (scale, необяз.):"), editScaleD);
+    stack->addWidget(wDword);
+
+    QWidget *wBits = new QWidget(&dialog);
+    QFormLayout *fBits = new QFormLayout(wBits);
+    QSpinBox *spinWordB = new QSpinBox(wBits); spinWordB->setRange(1, 32);
+    QLineEdit *editVarB = new QLineEdit(wBits);
+    QSpinBox *spinLength = new QSpinBox(wBits); spinLength->setRange(1, 16);
+    QSpinBox *spinOffset = new QSpinBox(wBits); spinOffset->setRange(4, 19);
+    QLineEdit *editValues = new QLineEdit(wBits);
+    fBits->addRow(QString::fromUtf8("Номер слова (word):"), spinWordB);
+    fBits->addRow(QString::fromUtf8("Переменная (var):"), editVarB);
+    fBits->addRow(QString::fromUtf8("Длина в битах (length):"), spinLength);
+    fBits->addRow(QString::fromUtf8("Смещение (offset, 4..19):"), spinOffset);
+    fBits->addRow(QString::fromUtf8("Таблица значений (values, необяз.):"), editValues);
+    stack->addWidget(wBits);
+
+    QWidget *wConst = new QWidget(&dialog);
+    QFormLayout *fConst = new QFormLayout(wConst);
+    QSpinBox *spinWordC = new QSpinBox(wConst); spinWordC->setRange(1, 32);
+    QLineEdit *editValueC = new QLineEdit(wConst);
+    fConst->addRow(QString::fromUtf8("Номер слова (word):"), spinWordC);
+    fConst->addRow(QString::fromUtf8("Значение (value, напр. 0 или 0xFF):"), editValueC);
+    stack->addWidget(wConst);
+
+    QWidget *wCounter = new QWidget(&dialog);
+    QFormLayout *fCounter = new QFormLayout(wCounter);
+    QSpinBox *spinWordCnt = new QSpinBox(wCounter); spinWordCnt->setRange(1, 32);
+    fCounter->addRow(QString::fromUtf8("Номер слова (word):"), spinWordCnt);
+    stack->addWidget(wCounter);
+
+    QWidget *wChecksum = new QWidget(&dialog);
+    QFormLayout *fChecksum = new QFormLayout(wChecksum);
+    QSpinBox *spinWordCsum = new QSpinBox(wChecksum); spinWordCsum->setRange(1, 32);
+    fChecksum->addRow(QString::fromUtf8("Номер слова (word):"), spinWordCsum);
+    stack->addWidget(wChecksum);
+
+    mainL->addLayout(formL);
+    mainL->addWidget(stack);
+
     QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
     connect(btnBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     connect(btnBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     mainL->addWidget(btnBox);
 
-    // Логика заполнения и сохранения аналогична предыдущей версии
+    if (isEdit && row >= 0) {
+        const MilDataField &f = m_config.arrays[m_currentArrayIndex].dataFields.at(row);
+        nameEdit->setText(f.name);
+        typeCombo->setCurrentText(f.type);
+
+        if (f.type == "word") {
+            spinWord->setValue(f.word);
+            editVarW->setText(f.var);
+            chkSignedW->setChecked(f.isSigned);
+            spinCmrW->setValue(f.cmr);
+            editScaleW->setText(f.scale);
+        } else if (f.type == "dword") {
+            spinWordL->setValue(f.wordl);
+            spinWordH->setValue(f.wordh);
+            editVarD->setText(f.var);
+            chkSignedD->setChecked(f.isSigned);
+            spinCmrD->setValue(f.cmr);
+            editScaleD->setText(f.scale);
+        } else if (f.type == "bits") {
+            spinWordB->setValue(f.word);
+            editVarB->setText(f.var);
+            spinLength->setValue(f.length);
+            spinOffset->setValue(f.offset);
+            editValues->setText(f.values);
+        } else if (f.type == "const") {
+            spinWordC->setValue(f.word);
+            editValueC->setText(f.value);
+        } else if (f.type == "counter") {
+            spinWordCnt->setValue(f.word);
+        } else if (f.type == "checksum") {
+            spinWordCsum->setValue(f.word);
+        }
+    }
+
+    auto updateVisibility = [&]() {
+        stack->setCurrentIndex(typeCombo->currentIndex());
+    };
+    connect(typeCombo, &QComboBox::currentTextChanged, updateVisibility);
+    updateVisibility(); // Вызываем сразу, чтобы показать нужную страницу
+
     if (dialog.exec() == QDialog::Accepted) {
-        MilDataField nf;
-        nf.name = nameEdit->text().trimmed();
-        nf.type = typeCombo->currentText();
-        if (nf.name.isEmpty()) { QMessageBox::warning(this, QString::fromUtf8("Ошибка"), QString::fromUtf8("Имя не может быть пустым.")); return; }
+        MilDataField newField;
+        newField.name = nameEdit->text().trimmed();
+        newField.type = typeCombo->currentText();
 
-        // Здесь должна быть логика считывания значений с виджетов в зависимости от typeCombo->currentIndex()
-        // (Скопируй блок if (idx == 0) ... из предыдущего ответа сюда)
-        nf.word = 1; // Заглушка, замени на реальное считывание
+        if (newField.name.isEmpty()) {
+            QMessageBox::warning(this, QString::fromUtf8("Ошибка"), QString::fromUtf8("Имя параметра не может быть пустым."));            return;
+        }
 
-        if (isEdit && row >= 0) m_config.arrays[m_currentArrayIndex].dataFields[row] = nf;
-        else m_config.arrays[m_currentArrayIndex].dataFields.append(nf);
+        int typeIdx = typeCombo->currentIndex();
+        if (typeIdx == 0) { // word
+            newField.word = spinWord->value();
+            newField.var = editVarW->text().trimmed();
+            newField.isSigned = chkSignedW->isChecked();
+            newField.cmr = spinCmrW->value();
+            newField.scale = editScaleW->text().trimmed();
+        } else if (typeIdx == 1) { // dword
+            newField.wordl = spinWordL->value();
+            newField.wordh = spinWordH->value();
+            newField.var = editVarD->text().trimmed();
+            newField.isSigned = chkSignedD->isChecked();
+            newField.cmr = spinCmrD->value();
+            newField.scale = editScaleD->text().trimmed();
+        } else if (typeIdx == 2) { // bits
+            newField.word = spinWordB->value();
+            newField.var = editVarB->text().trimmed();
+            newField.length = spinLength->value();
+            newField.offset = spinOffset->value();
+            newField.values = editValues->text().trimmed();
+        } else if (typeIdx == 3) { // const
+            newField.word = spinWordC->value();
+            newField.value = editValueC->text().trimmed();
+        } else if (typeIdx == 4) { // counter
+            newField.word = spinWordCnt->value();
+        } else if (typeIdx == 5) { // checksum
+            newField.word = spinWordCsum->value();
+        }
+
+
+        if (isEdit && row >= 0) {
+            m_config.arrays[m_currentArrayIndex].dataFields[row] = newField;
+        } else {
+            m_config.arrays[m_currentArrayIndex].dataFields.append(newField);
+        }
         updateArrayEditor();
     }
 }

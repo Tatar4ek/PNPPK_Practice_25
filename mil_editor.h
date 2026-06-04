@@ -57,7 +57,7 @@ public:
     explicit MilEditorWidget(QWidget *parent = nullptr);
 
     void loadFromJson(const QJsonObject &root);
-    void saveToJson(QJsonObject &root) const;
+    QString generateOrderedJson() const;
     void clear();
 
 private slots:
