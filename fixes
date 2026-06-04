@@ -1,12 +1,16 @@
+#include "mil_editor.h"
+#include "config_utils.h"
+#include <QDebug> // <--- УБЕДИТЕСЬ, ЧТО ЭТОТ ИНКЛУД ЕСТЬ
+
+// ... (другой код)
+
 void MilEditorWidget::saveToJson(QJsonObject &root) const {
-    // 0. Принудительно сохраняем текущие данные из UI в структуру
     const_cast<MilEditorWidget*>(this)->saveCurrentArrayFromUi();
     
-    // 1. ПРИНУДИТЕЛЬНО очищаем root, чтобы гарантировать, что мы начинаем с нуля
-    // и порядок ключей будет строго таким, как мы зададим ниже
+    // 1. ПРИНУДИТЕЛЬНО очищаем объект, чтобы начать с чистого листа
     root = QJsonObject();
-
-    // 2. ЖЕСТКО добавляем глобальные параметры ПЕРВЫМИ (они будут вверху файла)
+    
+    // 2. ЖЕСТКИЙ порядок вставки (они будут вверху файла)
     root["mode"] = m_config.mode;
     root["bus"] = m_config.bus;
     root["slave_sends"] = m_config.slave_sends;
@@ -18,7 +22,7 @@ void MilEditorWidget::saveToJson(QJsonObject &root) const {
     }
     root["ptc_addr"] = ptcArr;
     
-    // 3. Формируем и добавляем массивы ПОСЛЕДНИМИ (они будут внизу файла)
+    // 3. Массивы добавляем ПОСЛЕДНИМИ (они будут внизу файла)
     QJsonObject arrsObj;
     for (const MilArray &arr : m_config.arrays) {
         QJsonObject aObj;
@@ -32,12 +36,8 @@ void MilEditorWidget::saveToJson(QJsonObject &root) const {
         for (const MilDataField &f : arr.dataFields) {
             QJsonObject fObj;
             fObj["type"] = f.type;
-            if (f.type == "word" || f.type == "bits" || f.type == "const" || f.type == "counter" || f.type == "checksum") {
-                fObj["word"] = f.word;
-            }
-            if (f.type == "word" || f.type == "dword" || f.type == "bits") {
-                fObj["var"] = f.var;
-            }
+            if (f.type == "word" || f.type == "bits" || f.type == "const" || f.type == "counter" || f.type == "checksum") fObj["word"] = f.word;
+            if (f.type == "word" || f.type == "dword" || f.type == "bits") fObj["var"] = f.var;
             if (f.type == "word" || f.type == "dword") { 
                 fObj["signed"] = f.isSigned; 
                 fObj["cmr"] = f.cmr; 
@@ -60,7 +60,9 @@ void MilEditorWidget::saveToJson(QJsonObject &root) const {
         aObj["data"] = dObj;
         arrsObj[arr.name] = aObj;
     }
-    
-    // Добавляем arrays самым последним ключом
     root["arrays"] = arrsObj;
+
+    // === ДЕТЕКТОР ЛЖИ ===
+    // Эта строка напечатает реальный порядок ключей прямо перед записью в файл
+    qDebug() << "=== РЕАЛЬНЫЙ ПОРЯДОК КЛЮЧЕЙ В QJsonObject ===" << root.keys();
 }
