@@ -1,116 +1,55 @@
-MilEditorWidget::MilEditorWidget(QWidget *parent) : QWidget(parent), m_currentArrayIndex(-1)
-{
-    // Основной вертикальный компоновщик для всего виджета
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(5, 5, 5, 5);
-
-    // ========================================================================
-    // 1. ГЛОБАЛЬНЫЕ НАСТРОЙКИ (Теперь в самом верху, на всю ширину окна!)
-    // ========================================================================
-    QGroupBox *globalGroup = new QGroupBox(QString::fromUtf8("Глобальные настройки интерфейса"), this);
-    QFormLayout *globalForm = new QFormLayout(globalGroup);
+void MilEditorWidget::saveToJson(QJsonObject &root) const {
+    const_cast<MilEditorWidget*>(this)->saveCurrentArrayFromUi();
     
-    m_modeCombo = new QComboBox(this);
-    m_modeCombo->addItems(QStringList() << "BC" << "RT");
-    globalForm->addRow(QString::fromUtf8("Режим (mode):"), m_modeCombo);
-    connect(m_modeCombo, &QComboBox::currentTextChanged, this, &MilEditorWidget::onModeChanged);
+    // 1. Сначала добавляем глобальные параметры (они будут ВВЕРХУ файла)
+    root["mode"] = m_config.mode;
+    root["bus"] = m_config.bus;
+    root["slave_sends"] = m_config.slave_sends;
+    root["address"] = m_config.address;
     
-    m_busCombo = new QComboBox(this);
-    m_busCombo->addItems(QStringList() << "A" << "B" << "AB");
-    globalForm->addRow(QString::fromUtf8("Шина (bus):"), m_busCombo);
+    QJsonArray ptcArr;
+    for (int p : m_config.ptc_addr) {
+        ptcArr.append(p);
+    }
+    root["ptc_addr"] = ptcArr;
     
-    m_slaveSendsCheck = new QCheckBox(QString::fromUtf8("Ведомый канал ведет обмен (slave_sends)"), this);
-    globalForm->addRow(m_slaveSendsCheck);
-    
-    m_ptcAddrEdit = new QLineEdit(this);
-    globalForm->addRow(QString::fromUtf8("Адреса ПТЦ (ptc_addr, через запятую):"), m_ptcAddrEdit);
-    
-    m_rtAddressSpin = new QSpinBox(this);
-    m_rtAddressSpin->setRange(0, 31);
-    globalForm->addRow(QString::fromUtf8("Адрес ОУ (address, для режима RT):"), m_rtAddressSpin);
-    
-    // Добавляем глобальную группу в самый верх основного layout
-    mainLayout->addWidget(globalGroup);
-
-    // ========================================================================
-    // 2. РАЗДЕЛИТЕЛЬ (Сплиттер) для списка и деталей
-    // ========================================================================
-    QSplitter *splitter = new QSplitter(Qt::Horizontal, this);
-
-    // --- Левая панель: Список массивов ---
-    QWidget *leftPanel = new QWidget(this);
-    QVBoxLayout *leftLayout = new QVBoxLayout(leftPanel);
-    leftLayout->setContentsMargins(0, 0, 0, 0);
-    leftLayout->addWidget(new QLabel(QString::fromUtf8("<b>Список массивов (Arrays):</b>"), this));
-    m_arrayList = new QListWidget(this);
-    leftLayout->addWidget(m_arrayList);
-    splitter->addWidget(leftPanel);
-
-    connect(m_arrayList, &QListWidget::currentItemChanged, this, &MilEditorWidget::onArraySelected);
-    // --- Правая панель: Настройки выбранного массива и его полей ---
-    QWidget *rightPanel = new QWidget(this);
-    QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
-    rightLayout->setContentsMargins(0, 0, 0, 0);
-
-    // Группа настроек конкретного массива
-    QGroupBox *arrGroup = new QGroupBox(QString::fromUtf8("Настройки выбранного массива"), this);
-    QFormLayout *arrForm = new QFormLayout(arrGroup);
-    
-    m_arrAddressSpin = new QSpinBox(this); m_arrAddressSpin->setRange(0, 31);
-    arrForm->addRow(QString::fromUtf8("Адрес (address):"), m_arrAddressSpin);
-    
-    m_arrDirectionCombo = new QComboBox(this);
-    m_arrDirectionCombo->addItems(QStringList() << "send" << "receive");
-    arrForm->addRow(QString::fromUtf8("Направление (direction):"), m_arrDirectionCombo);
-    
-    m_arrSubaddrASpin = new QSpinBox(this); m_arrSubaddrASpin->setRange(0, 31);
-    arrForm->addRow(QString::fromUtf8("Подадрес А (subaddr_A):"), m_arrSubaddrASpin);
-    
-    m_arrSubaddrBSpin = new QSpinBox(this); m_arrSubaddrBSpin->setRange(0, 31);
-    arrForm->addRow(QString::fromUtf8("Подадрес В (subaddr_B):"), m_arrSubaddrBSpin);
-    
-    m_arrSizeSpin = new QSpinBox(this); m_arrSizeSpin->setRange(1, 32);
-    arrForm->addRow(QString::fromUtf8("Размер (size, слов):"), m_arrSizeSpin);
-    
-    rightLayout->addWidget(arrGroup);
-
-    // Группа полей данных
-    QGroupBox *fieldsGroup = new QGroupBox(QString::fromUtf8("Поля данных (data)"), this);
-    QVBoxLayout *fieldsLayout = new QVBoxLayout(fieldsGroup);
-    
-    m_fieldsTable = new QTableWidget(0, 4, this);
-    m_fieldsTable->setHorizontalHeaderLabels(QStringList() 
-        << QString::fromUtf8("Имя") 
-        << QString::fromUtf8("Тип") 
-        << QString::fromUtf8("Слово(а)") 
-        << QString::fromUtf8("Детали"));
-    m_fieldsTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    m_fieldsTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    m_fieldsTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-    m_fieldsTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);
-    m_fieldsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_fieldsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    fieldsLayout->addWidget(m_fieldsTable);
-    
-    QHBoxLayout *fieldBtns = new QHBoxLayout();
-    QPushButton *btnAdd = new QPushButton(QString::fromUtf8("+ Добавить поле"), this);
-    QPushButton *btnEdit = new QPushButton(QString::fromUtf8("✎ Изменить"), this);
-    QPushButton *btnDel = new QPushButton(QString::fromUtf8("✖ Удалить"), this);
-    fieldBtns->addWidget(btnAdd); fieldBtns->addWidget(btnEdit); fieldBtns->addWidget(btnDel); fieldBtns->addStretch();    fieldsLayout->addLayout(fieldBtns);
-    
-    connect(btnAdd, &QPushButton::clicked, this, &MilEditorWidget::onAddField);
-    connect(btnEdit, &QPushButton::clicked, this, &MilEditorWidget::onEditField);
-    connect(btnDel, &QPushButton::clicked, this, &MilEditorWidget::onDeleteField);
-    
-    rightLayout->addWidget(fieldsGroup);
-    rightLayout->addStretch(); // Растягивает пустое пространство вниз, чтобы таблицы не разъезжались
-
-    splitter->addWidget(rightPanel);
-    splitter->setSizes(QList<int>() << 250 << 850);
-    
-    // Добавляем сплиттер под глобальные настройки
-    mainLayout->addWidget(splitter);
-
-    // Инициализация видимости полей при старте
-    onModeChanged("BC");
+    // 2. Только в самом конце добавляем массивы (они будут ВНИЗУ файла)
+    QJsonObject arrsObj;
+    for (const MilArray &arr : m_config.arrays) {
+        QJsonObject aObj;
+        aObj["address"] = arr.address;
+        aObj["direction"] = arr.direction;
+        aObj["subaddr_A"] = arr.subaddr_A;
+        aObj["subaddr_B"] = arr.subaddr_B;
+        aObj["size"] = arr.size;
+        
+        QJsonObject dObj;
+        for (const MilDataField &f : arr.dataFields) {
+            QJsonObject fObj;
+            fObj["type"] = f.type;
+            if (f.type == "word" || f.type == "bits" || f.type == "const" || f.type == "counter" || f.type == "checksum") fObj["word"] = f.word;
+            if (f.type == "word" || f.type == "dword" || f.type == "bits") fObj["var"] = f.var;
+            if (f.type == "word" || f.type == "dword") { 
+                fObj["signed"] = f.isSigned; 
+                fObj["cmr"] = f.cmr; 
+                if (!f.scale.isEmpty()) fObj["scale"] = f.scale; 
+            }
+            if (f.type == "dword") { 
+                fObj["wordl"] = f.wordl; 
+                fObj["wordh"] = f.wordh; 
+            }
+            if (f.type == "bits") { 
+                fObj["length"] = f.length; 
+                fObj["offset"] = f.offset; 
+                if (!f.values.isEmpty()) fObj["values"] = f.values; 
+            }
+            if (f.type == "const") {
+                fObj["value"] = f.value;
+            }
+            dObj[f.name] = fObj;
+        }
+        aObj["data"] = dObj;
+        arrsObj[arr.name] = aObj;
+    }
+    root["arrays"] = arrsObj;
 }
