@@ -3,25 +3,27 @@ QString MilEditorWidget::generateOrderedJson() const {
 
     QString json = "{\n";
     
-    // ИСПРАВЛЕНО: Каждая первая строка обернута в QString()
+    // 1. Глобальные параметры (строго в этом порядке)
     json += QString("  \"mode\": \"") + m_config.mode + "\",\n";
     json += QString("  \"bus\": \"") + m_config.bus + "\",\n";
     json += QString("  \"slave_sends\": ") + (m_config.slave_sends ? "true" : "false") + ",\n";
     json += QString("  \"address\": ") + QString::number(m_config.address) + ",\n";
     
-    // ptc_addr
-    json += QString("  \"ptc_addr\": [");
-    QStringList ptcStrList;
-    for (int p : m_config.ptc_addr) {
-        ptcStrList.append(QString::number(p));
+    // ptc_addr (только если не пуст)
+    if (!m_config.ptc_addr.isEmpty()) {
+        json += QString("  \"ptc_addr\": [");
+        QStringList ptcStrList;
+        for (int p : m_config.ptc_addr) ptcStrList.append(QString::number(p));
+        json += ptcStrList.join(", ") + "],\n";
     }
-    json += ptcStrList.join(", ") + "],\n";
 
-    // arrays
+    // 2. Массивы
     json += QString("  \"arrays\": {\n");
     for (int i = 0; i < m_config.arrays.size(); ++i) {
         const MilArray &arr = m_config.arrays.at(i);
         json += QString("    \"") + arr.name + "\": {\n";
+        
+        // Порядок ключей массива строго фиксирован:
         json += QString("      \"address\": ") + QString::number(arr.address) + ",\n";
         json += QString("      \"direction\": \"") + arr.direction + "\",\n";
         json += QString("      \"subaddr_A\": ") + QString::number(arr.subaddr_A) + ",\n";
@@ -32,29 +34,37 @@ QString MilEditorWidget::generateOrderedJson() const {
         for (int j = 0; j < arr.dataFields.size(); ++j) {
             const MilDataField &f = arr.dataFields.at(j);
             json += QString("        \"") + f.name + "\": {\n";
+            
+            // Порядок ключей поля данных строго фиксирован:
             json += QString("          \"type\": \"") + f.type + "\"";
             
             if (f.type == "word" || f.type == "bits" || f.type == "const" || f.type == "counter" || f.type == "checksum") 
                 json += QString(",\n          \"word\": ") + QString::number(f.word);
-            if (f.type == "word" || f.type == "dword" || f.type == "bits") 
-                json += QString(",\n          \"var\": \"") + f.var + "\"";
-            if (f.type == "word" || f.type == "dword") {
-                json += QString(",\n          \"signed\": ") + (f.isSigned ? "true" : "false");
-                json += QString(",\n          \"cmr\": ") + QString::number(f.cmr);
-                if (!f.scale.isEmpty()) json += QString(",\n          \"scale\": \"") + f.scale + "\"";
-            }
+                
             if (f.type == "dword") {
                 json += QString(",\n          \"wordl\": ") + QString::number(f.wordl);
                 json += QString(",\n          \"wordh\": ") + QString::number(f.wordh);
             }
+            
+            if (f.type == "word" || f.type == "dword" || f.type == "bits") 
+                json += QString(",\n          \"var\": \"") + f.var + "\"";
+                
+            if (f.type == "word" || f.type == "dword") {
+                json += QString(",\n          \"signed\": ") + (f.isSigned ? "true" : "false");
+                json += QString(",\n          \"cmr\": ") + QString::number(f.cmr);
+                if (!f.scale.isEmpty()) 
+                    json += QString(",\n          \"scale\": \"") + f.scale + "\"";
+            }
+            
             if (f.type == "bits") {
                 json += QString(",\n          \"length\": ") + QString::number(f.length);
                 json += QString(",\n          \"offset\": ") + QString::number(f.offset);
-                if (!f.values.isEmpty()) json += QString(",\n          \"values\": \"") + f.values + "\"";
+                if (!f.values.isEmpty()) 
+                    json += QString(",\n          \"values\": \"") + f.values + "\"";
             }
-            if (f.type == "const") {
+            
+            if (f.type == "const") 
                 json += QString(",\n          \"value\": \"") + f.value + "\"";
-            }
             
             json += QString("\n        }") + (j < arr.dataFields.size() - 1 ? "," : "") + "\n";
         }
